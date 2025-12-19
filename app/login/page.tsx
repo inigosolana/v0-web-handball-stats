@@ -17,10 +17,20 @@ const mockUsers = [
   },
   {
     id: "coach1",
-    name: "Entrenador Madrid",
+    name: "Entrenador Madrid - Senior A",
     role: "coach" as UserRole,
     clubId: "club1",
-    description: "Gestión del Club Balonmano Madrid",
+    assignedTeamIds: ["1"], // Solo puede editar el equipo Senior A
+    description: "Entrenador del Senior A. Puede editar SOLO ese equipo",
+    icon: Users,
+  },
+  {
+    id: "coach2",
+    name: "Entrenador Madrid - Todos",
+    role: "coach" as UserRole,
+    clubId: "club1",
+    assignedTeamIds: ["1", "2"], // Puede editar Senior A y Juvenil B
+    description: "Entrenador con acceso a Senior A y Juvenil B",
     icon: Users,
   },
   {
@@ -29,7 +39,7 @@ const mockUsers = [
     role: "player" as UserRole,
     clubId: "club1",
     teamId: "1",
-    description: "Jugador del equipo Senior A",
+    description: "Jugador del equipo Senior A (Solo lectura)",
     icon: User,
   },
 ]
@@ -48,6 +58,7 @@ export default function LoginPage() {
         role: user.role,
         clubId: user.clubId,
         teamId: user.teamId,
+        assignedTeamIds: user.assignedTeamIds, // Agregado para RBAC avanzado
       })
       router.push("/dashboard")
     }, 300)
@@ -55,7 +66,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl">
+      <div className="w-full max-w-5xl">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
@@ -66,12 +77,12 @@ export default function LoginPage() {
               Handball<span className="text-primary">.AI</span>
             </span>
           </div>
-          <h1 className="text-2xl font-bold text-foreground mb-2">Login Simulado</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-2">Login Simulado - Sistema RBAC</h1>
           <p className="text-muted-foreground">Selecciona con qué rol quieres acceder al sistema</p>
         </div>
 
         {/* Cards de roles */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {mockUsers.map((user) => (
             <Card
               key={user.id}
@@ -86,7 +97,7 @@ export default function LoginPage() {
                     <user.icon className="h-8 w-8 text-primary" />
                   </div>
                 </div>
-                <CardTitle className="text-card-foreground text-xl">{user.name}</CardTitle>
+                <CardTitle className="text-card-foreground text-lg">{user.name}</CardTitle>
                 <CardDescription className="text-muted-foreground">
                   <span className="inline-block px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase">
                     {user.role === "superadmin" ? "Superadmin" : user.role === "coach" ? "Entrenador" : "Jugador"}
@@ -94,7 +105,7 @@ export default function LoginPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="text-center">
-                <p className="text-sm text-muted-foreground mb-4">{user.description}</p>
+                <p className="text-sm text-muted-foreground mb-4 min-h-[40px]">{user.description}</p>
                 <Button
                   className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
                   disabled={selectedUser === user.id}
@@ -109,29 +120,49 @@ export default function LoginPage() {
         {/* Info adicional */}
         <Card className="mt-8 bg-card/50 border-border">
           <CardContent className="pt-6">
-            <h3 className="font-semibold text-card-foreground mb-2">Permisos por Rol:</h3>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li className="flex items-start gap-2">
-                <Shield className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                <span>
-                  <strong className="text-primary">Superadmin:</strong> Ve todos los clubes, puede crear/borrar clubes y
-                  asignar entrenadores
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Users className="h-4 w-4 text-secondary mt-0.5 flex-shrink-0" />
-                <span>
-                  <strong className="text-secondary">Entrenador:</strong> Ve solo su club y equipos, gestiona plantilla
-                  (CRUD completo)
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <User className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                <span>
-                  <strong>Jugador:</strong> Vista de solo lectura, puede ver estadísticas pero no editar
-                </span>
-              </li>
-            </ul>
+            <h3 className="font-semibold text-card-foreground mb-3 text-lg">Sistema de Permisos Avanzado (RBAC):</h3>
+            <div className="grid md:grid-cols-3 gap-4 text-sm">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <Shield className="h-5 w-5 text-primary flex-shrink-0" />
+                  <strong className="text-primary">Superadmin</strong>
+                </div>
+                <ul className="space-y-1 text-muted-foreground pl-7 list-disc">
+                  <li>Ve todos los clubes y equipos</li>
+                  <li>Crea/edita/borra clubes</li>
+                  <li>Asigna entrenadores a equipos</li>
+                  <li>Edición completa en todo</li>
+                </ul>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="h-5 w-5 text-secondary flex-shrink-0" />
+                  <strong className="text-secondary">Entrenador</strong>
+                </div>
+                <ul className="space-y-1 text-muted-foreground pl-7 list-disc">
+                  <li>Ve todos los equipos de su club</li>
+                  <li>
+                    <strong>EDITA solo equipos asignados</strong>
+                  </li>
+                  <li>Otros equipos: modo observador</li>
+                  <li>Puede usar modo partido</li>
+                </ul>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <User className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                  <strong className="text-card-foreground">Jugador</strong>
+                </div>
+                <ul className="space-y-1 text-muted-foreground pl-7 list-disc">
+                  <li>Ve equipos de su club</li>
+                  <li>Solo lectura total</li>
+                  <li>Sin botones de edición</li>
+                  <li>Puede ver estadísticas</li>
+                </ul>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

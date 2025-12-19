@@ -7,18 +7,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import {
-  Activity,
-  LayoutDashboard,
-  Users,
-  UserCircle,
-  History,
-  Menu,
-  X,
-  Shield,
-  LogOut,
-  Smartphone,
-} from "lucide-react"
+import { Activity, LayoutDashboard, Shield, LogOut, Smartphone, Menu, X } from "lucide-react"
 import { useState } from "react"
 import { useClub } from "@/contexts/club-context"
 
@@ -39,11 +28,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   const navigation = [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["superadmin", "coach", "player"] },
-    { name: "Mis Equipos", href: "/dashboard/teams", icon: Users, roles: ["superadmin", "coach", "player"] },
-    { name: "Plantilla", href: "/dashboard/players", icon: UserCircle, roles: ["superadmin", "coach", "player"] },
-    { name: "Análisis", href: "/dashboard/analysis", icon: History, roles: ["superadmin", "coach", "player"] },
-    { name: "Gestión Clubes", href: "/dashboard/clubs", icon: Shield, roles: ["superadmin"] },
+    { name: "Mis Equipos", href: "/dashboard", icon: LayoutDashboard, roles: ["superadmin", "coach", "player"] },
+    { name: "Gestión de Clubes", href: "/dashboard/clubs", icon: Shield, roles: ["superadmin"] },
   ].filter((item) => item.roles.includes(currentUser.role))
 
   const handleLogout = () => {
@@ -123,7 +109,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               )
             })}
 
-            {/* Simular App Externa - Solo visible para superadmin y coach */}
             {(currentUser.role === "superadmin" || currentUser.role === "coach") && (
               <Link href="/dashboard/external-app">
                 <div className="mt-4 flex items-center gap-3 rounded-lg bg-secondary/20 border border-secondary/30 px-3 py-3 text-sm font-bold text-secondary transition-all hover:bg-secondary/30">

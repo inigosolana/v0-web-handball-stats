@@ -1,193 +1,86 @@
 "use client"
 
-import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { useClub } from "@/contexts/club-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
-import { Activity, Users, Target, TrendingUp } from "lucide-react"
+import { Users, Shield, Lock } from "lucide-react"
 
 export default function DashboardPage() {
-  const { teams, matches, getPlayersByTeam, getMatchesByTeam } = useClub()
-  const [selectedTeam, setSelectedTeam] = useState(teams[0]?.id || "")
+  const router = useRouter()
+  const { currentUser, getAccessibleTeams, getPlayersByTeam, getMatchesByTeam, canEditTeam } = useClub()
+  const accessibleTeams = getAccessibleTeams()
 
-  const teamMatches = getMatchesByTeam(selectedTeam)
-  const teamPlayers = getPlayersByTeam(selectedTeam)
-
-  // Calcular estadísticas agregadas
-  const totalGoals = teamMatches.reduce((sum, match) => sum + match.teamScore, 0)
-  const totalMatches = teamMatches.length
-  const wins = teamMatches.filter((m) => m.teamScore > m.rivalScore).length
-  const avgGoals = totalMatches > 0 ? (totalGoals / totalMatches).toFixed(1) : "0"
-
-  // Datos para gráfica de goles por jugador
-  const playerGoalsMap: { [key: string]: number } = {}
-  teamMatches.forEach((match) => {
-    match.stats.forEach((stat) => {
-      if (!playerGoalsMap[stat.playerName]) {
-        playerGoalsMap[stat.playerName] = 0
-      }
-      playerGoalsMap[stat.playerName] += stat.goals
-    })
-  })
-
-  const goalsChartData = Object.entries(playerGoalsMap).map(([name, goals]) => ({
-    name,
-    goles: goals,
-  }))
-
-  // Datos para gráfica de efectividad
-  let totalAttempts = 0
-  let totalSuccessful = 0
-  teamMatches.forEach((match) => {
-    match.stats.forEach((stat) => {
-      totalSuccessful += stat.goals
-      totalAttempts += stat.goals + stat.misses
-    })
-  })
-
-  const effectiveness = totalAttempts > 0 ? ((totalSuccessful / totalAttempts) * 100).toFixed(1) : 0
-  const effectivenessData = [
-    { name: "Aciertos", value: totalSuccessful, color: "#FF5722" },
-    { name: "Fallos", value: totalAttempts - totalSuccessful, color: "#424242" },
-  ]
+  const handleTeamClick = (teamId: string) => {
+    router.push(`/dashboard/team/${teamId}`)
+  }
 
   return (
     <div className="space-y-6">
-      {/* Header con selector de equipo */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">Análisis y estadísticas del equipo</p>
-        </div>
-        <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-          <SelectTrigger className="w-full sm:w-[200px] bg-card border-border">
-            <SelectValue placeholder="Seleccionar equipo" />
-          </SelectTrigger>
-          <SelectContent>
-            {teams.map((team) => (
-              <SelectItem key={team.id} value={team.id}>
-                {team.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">Mis Equipos</h1>
+        <p className="text-muted-foreground">
+          {currentUser?.role === "superadmin" && "Todos los equipos del sistema"}
+          {currentUser?.role === "coach" && "Equipos de tu club"}
+          {currentUser?.role === "player" && "Equipos de tu club"}
+        </p>
       </div>
 
-      {/* Tarjetas de estadísticas */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-card border-border">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-card-foreground">Total Partidos</CardTitle>
-            <Activity className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-card-foreground">{totalMatches}</div>
-            <p className="text-xs text-muted-foreground">Jugados esta temporada</p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {accessibleTeams.map((team) => {
+          const teamPlayers = getPlayersByTeam(team.id)
+          const teamMatches = getMatchesByTeam(team.id)
+          const wins = teamMatches.filter((m) => m.teamScore > m.rivalScore).length
+          const canEdit = canEditTeam(team.id)
 
-        <Card className="bg-card border-border">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-card-foreground">Victorias</CardTitle>
-            <TrendingUp className="h-4 w-4 text-secondary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-card-foreground">{wins}</div>
-            <p className="text-xs text-muted-foreground">
-              {totalMatches > 0 ? `${((wins / totalMatches) * 100).toFixed(0)}% de partidos` : "Sin datos"}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card border-border">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-card-foreground">Goles Totales</CardTitle>
-            <Target className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-card-foreground">{totalGoals}</div>
-            <p className="text-xs text-muted-foreground">{avgGoals} goles por partido</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card border-border">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-card-foreground">Jugadores</CardTitle>
-            <Users className="h-4 w-4 text-secondary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-card-foreground">{teamPlayers.length}</div>
-            <p className="text-xs text-muted-foreground">En la plantilla</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Gráficas */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Gráfica de goles por jugador */}
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-card-foreground">Goles por Jugador</CardTitle>
-            <CardDescription className="text-muted-foreground">Total de goles en todos los partidos</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={goalsChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
-                <XAxis dataKey="name" stroke="#888888" fontSize={12} />
-                <YAxis stroke="#888888" fontSize={12} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#1a1a1a",
-                    border: "1px solid #2a2a2a",
-                    borderRadius: "8px",
-                    color: "#ffffff",
-                  }}
-                />
-                <Bar dataKey="goles" fill="#FF5722" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Gráfica de efectividad */}
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-card-foreground">Efectividad de Tiro</CardTitle>
-            <CardDescription className="text-muted-foreground">
-              {effectiveness}% de efectividad del equipo
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={effectivenessData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {effectivenessData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#1a1a1a",
-                    border: "1px solid #2a2a2a",
-                    borderRadius: "8px",
-                    color: "#ffffff",
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+          return (
+            <Card
+              key={team.id}
+              className="bg-card border-border hover:border-primary/50 transition-all cursor-pointer hover:shadow-lg hover:shadow-primary/10"
+              onClick={() => handleTeamClick(team.id)}
+            >
+              <CardHeader>
+                <div className="flex items-center justify-between mb-2">
+                  <Shield className="h-10 w-10 text-primary" />
+                  <div className="flex items-center gap-2">
+                    {!canEdit && currentUser?.role === "coach" && (
+                      <Lock className="h-4 w-4 text-muted-foreground" title="Solo lectura" />
+                    )}
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <Users className="h-4 w-4" />
+                      {teamPlayers.length}
+                    </div>
+                  </div>
+                </div>
+                <CardTitle className="text-card-foreground text-xl">{team.name}</CardTitle>
+                <CardDescription className="text-muted-foreground">{team.category}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Jugadores:</span>
+                    <span className="font-medium text-card-foreground">{teamPlayers.length}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Partidos:</span>
+                    <span className="font-medium text-card-foreground">{teamMatches.length}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Victorias:</span>
+                    <span className="font-medium text-primary">{wins}</span>
+                  </div>
+                  {!canEdit && currentUser?.role === "coach" && (
+                    <div className="mt-4 pt-2 border-t border-border">
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Lock className="h-3 w-3" />
+                        Modo observador
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
     </div>
   )

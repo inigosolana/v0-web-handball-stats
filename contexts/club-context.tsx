@@ -8,8 +8,9 @@ export interface User {
   id: string
   name: string
   role: UserRole
-  clubId?: string // Solo para coach y player
-  teamId?: string // Solo para player
+  clubId?: string
+  teamId?: string
+  assignedTeamIds?: string[] // IDs de equipos que el entrenador puede editar
 }
 
 export interface Club {
@@ -32,6 +33,8 @@ export interface Player {
     | "Pivote"
   teamId: string
   photo?: string
+  height?: number // cm
+  weight?: number // kg
 }
 
 export interface Team {
@@ -69,26 +72,32 @@ interface ClubContextType {
   addClub: (club: Club) => void
   deleteClub: (id: string) => void
 
-  // Equipos
   teams: Team[]
   addTeam: (team: Team) => void
+  updateTeam: (id: string, team: Partial<Team>) => void
   getTeamsByClub: (clubId: string) => Team[]
 
-  // Jugadores
   players: Player[]
   addPlayer: (player: Player) => void
   updatePlayer: (id: string, player: Partial<Player>) => void
   deletePlayer: (id: string) => void
   getPlayersByTeam: (teamId: string) => Player[]
 
-  // Partidos
   matches: Match[]
   addMatch: (match: Match) => void
   getMatchesByTeam: (teamId: string) => Match[]
 
-  canEdit: () => boolean
-  canDelete: () => boolean
+  canEditTeam: (teamId: string) => boolean
+  canDeleteFromTeam: (teamId: string) => boolean
   getAccessibleTeams: () => Team[]
+  getPlayerStats: (playerId: string) => {
+    totalGoals: number
+    totalMisses: number
+    totalTurnovers: number
+    totalMatches: number
+    accuracy: number
+    avgGoalsPerMatch: number
+  }
 }
 
 const ClubContext = createContext<ClubContextType | undefined>(undefined)
@@ -105,14 +114,14 @@ const initialTeams: Team[] = [
 ]
 
 const initialPlayers: Player[] = [
-  { id: "1", name: "Carlos Martínez", number: 1, position: "Portero", teamId: "1" },
-  { id: "2", name: "Pablo García", number: 10, position: "Central", teamId: "1" },
-  { id: "3", name: "David López", number: 7, position: "Extremo Derecho", teamId: "1" },
-  { id: "4", name: "Miguel Sánchez", number: 9, position: "Lateral Izquierdo", teamId: "1" },
-  { id: "5", name: "Javier Fernández", number: 14, position: "Pivote", teamId: "1" },
-  { id: "6", name: "Ana Rodríguez", number: 12, position: "Portero", teamId: "2" },
-  { id: "7", name: "Laura Martín", number: 8, position: "Central", teamId: "2" },
-  { id: "8", name: "Sara González", number: 11, position: "Extremo Izquierdo", teamId: "2" },
+  { id: "1", name: "Carlos Martínez", number: 1, position: "Portero", teamId: "1", height: 188, weight: 85 },
+  { id: "2", name: "Pablo García", number: 10, position: "Central", teamId: "1", height: 192, weight: 95 },
+  { id: "3", name: "David López", number: 7, position: "Extremo Derecho", teamId: "1", height: 182, weight: 78 },
+  { id: "4", name: "Miguel Sánchez", number: 9, position: "Lateral Izquierdo", teamId: "1", height: 185, weight: 82 },
+  { id: "5", name: "Javier Fernández", number: 14, position: "Pivote", teamId: "1", height: 190, weight: 90 },
+  { id: "6", name: "Ana Rodríguez", number: 12, position: "Portero", teamId: "2", height: 175, weight: 65 },
+  { id: "7", name: "Laura Martín", number: 8, position: "Central", teamId: "2", height: 178, weight: 70 },
+  { id: "8", name: "Sara González", number: 11, position: "Extremo Izquierdo", teamId: "2", height: 172, weight: 63 },
 ]
 
 const initialMatches: Match[] = [
@@ -176,6 +185,10 @@ export function ClubProvider({ children }: { children: ReactNode }) {
     setTeams([...teams, team])
   }
 
+  const updateTeam = (id: string, updatedTeam: Partial<Team>) => {
+    setTeams(teams.map((t) => (t.id === id ? { ...t, ...updatedTeam } : t)))
+  }
+
   const getTeamsByClub = (clubId: string) => {
     return teams.filter((t) => t.clubId === clubId)
   }
@@ -204,12 +217,29 @@ export function ClubProvider({ children }: { children: ReactNode }) {
     return matches.filter((m) => m.teamId === teamId)
   }
 
-  const canEdit = () => {
-    return currentUser?.role === "superadmin" || currentUser?.role === "coach"
+  const canEditTeam = (teamId: string) => {
+    if (!currentUser) return false
+
+    if (currentUser.role === "superadmin") return true
+
+    if (currentUser.role === "coach") {
+      // El entrenador solo puede editar sus equipos asignados
+      return currentUser.assignedTeamIds?.includes(teamId) || false
+    }
+
+    return false
   }
 
-  const canDelete = () => {
-    return currentUser?.role === "superadmin" || currentUser?.role === "coach"
+  const canDeleteFromTeam = (teamId: string) => {
+    if (!currentUser) return false
+
+    if (currentUser.role === "superadmin") return true
+
+    if (currentUser.role === "coach") {
+      return currentUser.assignedTeamIds?.includes(teamId) || false
+    }
+
+    return false
   }
 
   const getAccessibleTeams = () => {
@@ -230,6 +260,25 @@ export function ClubProvider({ children }: { children: ReactNode }) {
     return []
   }
 
+  const getPlayerStats = (playerId: string) => {
+    const playerMatches = matches.flatMap((match) => match.stats.filter((stat) => stat.playerId === playerId))
+
+    const totalGoals = playerMatches.reduce((sum, stat) => sum + stat.goals, 0)
+    const totalMisses = playerMatches.reduce((sum, stat) => sum + stat.misses, 0)
+    const totalTurnovers = playerMatches.reduce((sum, stat) => sum + stat.turnovers, 0)
+    const totalShots = totalGoals + totalMisses
+    const totalMatches = playerMatches.length
+
+    return {
+      totalGoals,
+      totalMisses,
+      totalTurnovers,
+      totalMatches,
+      accuracy: totalShots > 0 ? (totalGoals / totalShots) * 100 : 0,
+      avgGoalsPerMatch: totalMatches > 0 ? totalGoals / totalMatches : 0,
+    }
+  }
+
   return (
     <ClubContext.Provider
       value={{
@@ -241,6 +290,7 @@ export function ClubProvider({ children }: { children: ReactNode }) {
         deleteClub,
         teams,
         addTeam,
+        updateTeam,
         getTeamsByClub,
         players,
         addPlayer,
@@ -249,9 +299,10 @@ export function ClubProvider({ children }: { children: ReactNode }) {
         addMatch,
         getPlayersByTeam,
         getMatchesByTeam,
-        canEdit,
-        canDelete,
+        canEditTeam,
+        canDeleteFromTeam,
         getAccessibleTeams,
+        getPlayerStats,
       }}
     >
       {children}
