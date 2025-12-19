@@ -29,6 +29,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const navigation = [
     { name: "Mis Equipos", href: "/dashboard", icon: LayoutDashboard, roles: ["superadmin", "coach", "player"] },
+    { name: "Sala de Análisis", href: "/dashboard/analysis", icon: Activity, roles: ["superadmin", "coach"] },
     { name: "Gestión de Clubes", href: "/dashboard/clubs", icon: Shield, roles: ["superadmin"] },
     { name: "Gestión de Accesos", href: "/dashboard/access", icon: Shield, roles: ["superadmin"] },
   ].filter((item) => item.roles.includes(currentUser.role))
