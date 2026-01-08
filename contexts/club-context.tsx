@@ -14,10 +14,17 @@ export interface User {
   assignedTeamIds?: string[] // IDs de equipos que el entrenador puede editar
 }
 
+export interface Club {
+  id: string
+  name: string
+  coachId: string
+}
+
 export interface Team {
   id: string
   name: string
   category: string
+  clubId: string
   coachId?: string // Entrenador asignado a este equipo
 }
 
@@ -75,6 +82,10 @@ interface ClubContextType {
   logout: () => void
 
   teams: Team[]
+  clubs: Club[]
+  addClub: (club: Club) => void
+  deleteClub: (id: string) => void
+  getTeamsByClub: (clubId: string) => Team[]
   addTeam: (team: Team) => void
   updateTeam: (id: string, team: Partial<Team>) => void
   assignCoachToTeam: (teamId: string, coachId: string | undefined) => void
@@ -113,12 +124,16 @@ interface ClubContextType {
 
 const ClubContext = createContext<ClubContextType | undefined>(undefined)
 
+const initialClubs: Club[] = [
+  { id: "club1", name: "Club Balonmano Ejemplo", coachId: "coach3" }
+]
+
 // <CHANGE> Datos mock más completos y realistas
 const initialTeams: Team[] = [
-  { id: "1", name: "Senior A Masculino", category: "Senior", coachId: "coach1" },
-  { id: "2", name: "Juvenil B Femenino", category: "Juvenil", coachId: "coach1" },
-  { id: "3", name: "Cadete A Masculino", category: "Cadete", coachId: "coach2" },
-  { id: "4", name: "Infantil Mixto", category: "Infantil", coachId: undefined },
+  { id: "1", name: "Senior A Masculino", category: "Senior", clubId: "club1", coachId: "coach1" },
+  { id: "2", name: "Juvenil B Femenino", category: "Juvenil", clubId: "club1", coachId: "coach1" },
+  { id: "3", name: "Cadete A Masculino", category: "Cadete", clubId: "club1", coachId: "coach2" },
+  { id: "4", name: "Infantil Mixto", category: "Infantil", clubId: "club1", coachId: undefined },
 ]
 
 const initialPlayers: Player[] = [
@@ -428,6 +443,22 @@ export function ClubProvider({ children }: { children: ReactNode }) {
     setCurrentUser(user)
   }
 
+  const [clubs, setClubs] = useState<Club[]>(initialClubs)
+
+  const addClub = (club: Club) => {
+    setClubs([...clubs, club])
+  }
+
+  const deleteClub = (id: string) => {
+    setClubs(clubs.filter(c => c.id !== id))
+    // Also delete associated teams
+    setTeams(teams.filter(t => t.clubId !== id))
+  }
+
+  const getTeamsByClub = (clubId: string) => {
+    return teams.filter(t => t.clubId === clubId)
+  }
+
   const logout = () => {
     setCurrentUser(null)
   }
@@ -558,6 +589,10 @@ export function ClubProvider({ children }: { children: ReactNode }) {
         currentUser,
         login,
         logout,
+        clubs,
+        addClub,
+        deleteClub,
+        getTeamsByClub,
         teams,
         addTeam,
         updateTeam,

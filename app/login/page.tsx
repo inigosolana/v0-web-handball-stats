@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useClub, type UserRole } from "@/contexts/club-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Activity, Shield, User, Users } from "lucide-react"
+import { Activity, Shield, User, Users, Building2 } from "lucide-react"
 
 const mockUsers = [
   {
@@ -14,6 +14,14 @@ const mockUsers = [
     role: "superadmin" as UserRole,
     description: "Control total del sistema y gestión de accesos para entrenadores.",
     icon: Shield,
+  },
+  {
+    id: "clubadmin1",
+    name: "Admin de Club",
+    role: "club_admin" as UserRole,
+    clubId: "club1",
+    description: "Gestión interna del club: entrenadores y equipos.",
+    icon: Building2,
   },
   {
     id: "coach1",
@@ -73,7 +81,7 @@ export default function LoginPage() {
         </div>
 
         {/* Cards de roles */}
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-4">
           {mockUsers.map((user) => (
             <Card
               key={user.id}
@@ -90,7 +98,7 @@ export default function LoginPage() {
                 <CardTitle className="text-card-foreground text-lg">{user.name}</CardTitle>
                 <CardDescription className="text-muted-foreground">
                   <span className="inline-block px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase">
-                    {user.role === "superadmin" ? "Superadmin" : user.role === "coach" ? "Entrenador" : "Jugador"}
+                    {user.role === "superadmin" ? "Superadmin" : user.role === "club_admin" ? "Admin Club" : user.role === "coach" ? "Entrenador" : "Jugador"}
                   </span>
                 </CardDescription>
               </CardHeader>
@@ -111,7 +119,7 @@ export default function LoginPage() {
         <Card className="mt-8 bg-card/50 border-border">
           <CardContent className="pt-6">
             <h3 className="font-semibold text-card-foreground mb-3 text-lg">Sistema de Permisos Avanzado (RBAC):</h3>
-            <div className="grid md:grid-cols-3 gap-4 text-sm">
+            <div className="grid md:grid-cols-4 gap-4 text-sm">
               <div className="space-y-2">
                 <div className="flex items-center gap-2 mb-2">
                   <Shield className="h-5 w-5 text-primary flex-shrink-0" />
@@ -122,6 +130,18 @@ export default function LoginPage() {
                   <li>Crea/edita/borra clubes</li>
                   <li>Asigna entrenadores a equipos</li>
                   <li>Edición completa en todo</li>
+                </ul>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <Building2 className="h-5 w-5 text-purple-500 flex-shrink-0" />
+                  <strong className="text-purple-500">Club Admin</strong>
+                </div>
+                <ul className="space-y-1 text-muted-foreground pl-7 list-disc">
+                  <li>Gestiona SU club</li>
+                  <li>Asigna entrenadores</li>
+                  <li>Crea equipos</li>
                 </ul>
               </div>
 
