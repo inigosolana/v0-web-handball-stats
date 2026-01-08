@@ -17,7 +17,7 @@ const mockUsers = [
   },
   {
     id: "coach1",
-    name: "Entrenador Senior A",
+    name: "Entrenador",
     role: "coach" as UserRole,
     clubId: "club1",
     assignedTeamIds: ["1"],
@@ -26,7 +26,7 @@ const mockUsers = [
   },
   {
     id: "player1",
-    name: "Jugador de Plantilla",
+    name: "Jugador",
     role: "player" as UserRole,
     clubId: "club1",
     teamId: "1",
@@ -77,9 +77,8 @@ export default function LoginPage() {
           {mockUsers.map((user) => (
             <Card
               key={user.id}
-              className={`bg-card border-border cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg ${
-                selectedUser === user.id ? "border-primary ring-2 ring-primary/20" : ""
-              }`}
+              className={`bg-card border-border cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg ${selectedUser === user.id ? "border-primary ring-2 ring-primary/20" : ""
+                }`}
               onClick={() => handleLogin(user)}
             >
               <CardHeader className="text-center pb-4">

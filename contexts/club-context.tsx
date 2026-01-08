@@ -7,8 +7,10 @@ export type UserRole = "superadmin" | "coach" | "player"
 export interface User {
   id: string
   name: string
-  email: string
+  email?: string
   role: UserRole
+  clubId?: string
+  teamId?: string
   assignedTeamIds?: string[] // IDs de equipos que el entrenador puede editar
 }
 
@@ -25,13 +27,13 @@ export interface Player {
   name: string
   number: number
   position:
-    | "Portero"
-    | "Extremo Izquierdo"
-    | "Extremo Derecho"
-    | "Lateral Izquierdo"
-    | "Lateral Derecho"
-    | "Central"
-    | "Pivote"
+  | "Portero"
+  | "Extremo Izquierdo"
+  | "Extremo Derecho"
+  | "Lateral Izquierdo"
+  | "Lateral Derecho"
+  | "Central"
+  | "Pivote"
   teamId: string
   photoUrl?: string
   height?: number // cm
@@ -120,79 +122,79 @@ const initialTeams: Team[] = [
 ]
 
 const initialPlayers: Player[] = [
-  { 
-    id: "1", 
-    name: "Carlos Martínez", 
-    number: 1, 
-    position: "Portero", 
-    teamId: "1", 
-    height: 188, 
+  {
+    id: "1",
+    name: "Carlos Martínez",
+    number: 1,
+    position: "Portero",
+    teamId: "1",
+    height: 188,
     weight: 85,
     photoUrl: "/placeholder.svg?key=u4n5u",
     birthDate: new Date("1995-03-15")
   },
-  { 
-    id: "2", 
-    name: "Pablo García", 
-    number: 10, 
-    position: "Central", 
-    teamId: "1", 
-    height: 192, 
+  {
+    id: "2",
+    name: "Pablo García",
+    number: 10,
+    position: "Central",
+    teamId: "1",
+    height: 192,
     weight: 95,
     photoUrl: "/placeholder.svg?key=yur0p",
     birthDate: new Date("1997-07-22")
   },
-  { 
-    id: "3", 
-    name: "David López", 
-    number: 7, 
-    position: "Extremo Derecho", 
-    teamId: "1", 
-    height: 182, 
+  {
+    id: "3",
+    name: "David López",
+    number: 7,
+    position: "Extremo Derecho",
+    teamId: "1",
+    height: 182,
     weight: 78,
     photoUrl: "/placeholder.svg?key=l63j5",
     birthDate: new Date("1996-11-08")
   },
-  { 
-    id: "4", 
-    name: "Miguel Sánchez", 
-    number: 9, 
-    position: "Lateral Izquierdo", 
-    teamId: "1", 
-    height: 185, 
+  {
+    id: "4",
+    name: "Miguel Sánchez",
+    number: 9,
+    position: "Lateral Izquierdo",
+    teamId: "1",
+    height: 185,
     weight: 82,
     photoUrl: "/placeholder.svg?key=zkbkp",
     birthDate: new Date("1998-01-30")
   },
-  { 
-    id: "5", 
-    name: "Javier Fernández", 
-    number: 14, 
-    position: "Pivote", 
-    teamId: "1", 
-    height: 190, 
+  {
+    id: "5",
+    name: "Javier Fernández",
+    number: 14,
+    position: "Pivote",
+    teamId: "1",
+    height: 190,
     weight: 90,
     photoUrl: "/placeholder.svg?key=c8n2n",
     birthDate: new Date("1994-09-12")
   },
-  { 
-    id: "6", 
-    name: "Ana Rodríguez", 
-    number: 12, 
-    position: "Portero", 
-    teamId: "2", 
-    height: 175, 
+  {
+    id: "6",
+    name: "Ana Rodríguez",
+    number: 12,
+    position: "Portero",
+    teamId: "2",
+    height: 175,
     weight: 65,
     photoUrl: "/placeholder.svg?key=3etx5",
     birthDate: new Date("2005-05-20")
   },
-  { 
-    id: "7", 
-    name: "Laura Martín", 
-    number: 8, 
-    position: "Central", 
-    teamId: "2", 
-    height: 178, 
+  {
+    id: "7",
+    name: "Laura Martín",
+    number: 8,
+    position: "Central",
+    teamId: "2",
+    height: 178,
     weight: 70,
     photoUrl: "/placeholder.svg?key=gtbif",
     birthDate: new Date("2006-02-14")
@@ -210,11 +212,11 @@ const initialMatches: Match[] = [
     teamScore: 28,
     rivalScore: 24,
     stats: [
-      { 
-        playerId: "2", 
-        playerName: "Pablo García", 
-        goals: 8, 
-        misses: 3, 
+      {
+        playerId: "2",
+        playerName: "Pablo García",
+        goals: 8,
+        misses: 3,
         turnovers: 1,
         assists: 4,
         steals: 2,
@@ -232,11 +234,11 @@ const initialMatches: Match[] = [
           { x: 47, y: 27, result: "goal" },
         ]
       },
-      { 
-        playerId: "3", 
-        playerName: "David López", 
-        goals: 6, 
-        misses: 2, 
+      {
+        playerId: "3",
+        playerName: "David López",
+        goals: 6,
+        misses: 2,
         turnovers: 0,
         assists: 2,
         steals: 3,
@@ -251,11 +253,11 @@ const initialMatches: Match[] = [
           { x: 85, y: 21, result: "goal" },
         ]
       },
-      { 
-        playerId: "4", 
-        playerName: "Miguel Sánchez", 
-        goals: 7, 
-        misses: 4, 
+      {
+        playerId: "4",
+        playerName: "Miguel Sánchez",
+        goals: 7,
+        misses: 4,
         turnovers: 2,
         assists: 3,
         steals: 1,
@@ -273,11 +275,11 @@ const initialMatches: Match[] = [
           { x: 26, y: 30, result: "goal" },
         ]
       },
-      { 
-        playerId: "5", 
-        playerName: "Javier Fernández", 
-        goals: 7, 
-        misses: 1, 
+      {
+        playerId: "5",
+        playerName: "Javier Fernández",
+        goals: 7,
+        misses: 1,
         turnovers: 1,
         assists: 1,
         steals: 4,
@@ -303,11 +305,11 @@ const initialMatches: Match[] = [
     teamScore: 26,
     rivalScore: 26,
     stats: [
-      { 
-        playerId: "2", 
-        playerName: "Pablo García", 
-        goals: 9, 
-        misses: 4, 
+      {
+        playerId: "2",
+        playerName: "Pablo García",
+        goals: 9,
+        misses: 4,
         turnovers: 0,
         assists: 3,
         steals: 1,
@@ -327,11 +329,11 @@ const initialMatches: Match[] = [
           { x: 48, y: 28, result: "goal" },
         ]
       },
-      { 
-        playerId: "3", 
-        playerName: "David López", 
-        goals: 5, 
-        misses: 3, 
+      {
+        playerId: "3",
+        playerName: "David López",
+        goals: 5,
+        misses: 3,
         turnovers: 1,
         assists: 1,
         steals: 2,
@@ -346,11 +348,11 @@ const initialMatches: Match[] = [
           { x: 86, y: 20, result: "goal" },
         ]
       },
-      { 
-        playerId: "4", 
-        playerName: "Miguel Sánchez", 
-        goals: 6, 
-        misses: 2, 
+      {
+        playerId: "4",
+        playerName: "Miguel Sánchez",
+        goals: 6,
+        misses: 2,
         turnovers: 1,
         assists: 5,
         steals: 2,
@@ -365,11 +367,11 @@ const initialMatches: Match[] = [
           { x: 22, y: 33, result: "goal" },
         ]
       },
-      { 
-        playerId: "5", 
-        playerName: "Javier Fernández", 
-        goals: 6, 
-        misses: 3, 
+      {
+        playerId: "5",
+        playerName: "Javier Fernández",
+        goals: 6,
+        misses: 3,
         turnovers: 2,
         assists: 2,
         steals: 3,
@@ -391,26 +393,26 @@ const initialMatches: Match[] = [
 
 // <CHANGE> Lista inicial de entrenadores para gestión
 const initialCoaches: User[] = [
-  { 
-    id: "coach1", 
-    name: "Juan Pérez", 
+  {
+    id: "coach1",
+    name: "Juan Pérez",
     email: "juan.perez@club.com",
-    role: "coach", 
-    assignedTeamIds: ["1", "2"] 
+    role: "coach",
+    assignedTeamIds: ["1", "2"]
   },
-  { 
-    id: "coach2", 
-    name: "María González", 
+  {
+    id: "coach2",
+    name: "María González",
     email: "maria.gonzalez@club.com",
-    role: "coach", 
-    assignedTeamIds: ["3"] 
+    role: "coach",
+    assignedTeamIds: ["3"]
   },
-  { 
-    id: "coach3", 
-    name: "Pedro Martínez", 
+  {
+    id: "coach3",
+    name: "Pedro Martínez",
     email: "pedro.martinez@club.com",
-    role: "coach", 
-    assignedTeamIds: [] 
+    role: "coach",
+    assignedTeamIds: []
   },
 ]
 
@@ -564,6 +566,7 @@ export function ClubProvider({ children }: { children: ReactNode }) {
         addPlayer,
         updatePlayer,
         deletePlayer,
+        matches,
         addMatch,
         getPlayersByTeam,
         getMatchesByTeam,
