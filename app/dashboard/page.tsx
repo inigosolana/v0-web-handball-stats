@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation"
 import { useClub } from "@/contexts/club-context"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users, Shield, Lock } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Users, Shield, Lock, Trophy, User } from "lucide-react"
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -15,9 +15,9 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Mis Equipos</h1>
+        <h1 className="text-3xl font-bold text-white mb-2">Mis Equipos</h1>
         <p className="text-muted-foreground">
           {currentUser?.role === "superadmin" && "Todos los equipos del sistema"}
           {currentUser?.role === "coach" && "Equipos de tu club"}
@@ -35,45 +35,43 @@ export default function DashboardPage() {
           return (
             <Card
               key={team.id}
-              className="bg-card border-border hover:border-primary/50 transition-all cursor-pointer hover:shadow-lg hover:shadow-primary/10"
+              className="group relative bg-[#0A0A0A] border-border/50 hover:border-primary/50 transition-all duration-300 cursor-pointer overflow-hidden p-2"
               onClick={() => handleTeamClick(team.id)}
             >
-              <CardHeader>
-                <div className="flex items-center justify-between mb-2">
-                  <Shield className="h-10 w-10 text-primary" />
-                  <div className="flex items-center gap-2">
-                    {!canEdit && currentUser?.role === "coach" && (
-                      <Lock className="h-4 w-4 text-muted-foreground" title="Solo lectura" />
-                    )}
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <Users className="h-4 w-4" />
-                      {teamPlayers.length}
-                    </div>
-                  </div>
+              <div className="absolute top-4 right-4 flex items-center gap-1.5 text-muted-foreground bg-white/5 px-2 py-1 rounded-md text-xs font-medium">
+                <User className="h-3.5 w-3.5" />
+                <span>{teamPlayers.length}</span>
+              </div>
+
+              <CardHeader className="pb-2 pt-6">
+                <div className="mb-4 inline-flex">
+                  <Shield className="h-12 w-12 text-primary" strokeWidth={1.5} />
                 </div>
-                <CardTitle className="text-card-foreground text-xl">{team.name}</CardTitle>
-                <CardDescription className="text-muted-foreground">{team.category}</CardDescription>
+                <CardTitle className="text-xl font-bold text-white mb-1 group-hover:text-primary transition-colors">
+                  {team.name}
+                </CardTitle>
+                <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  {team.category}
+                </p>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Jugadores:</span>
-                    <span className="font-medium text-card-foreground">{teamPlayers.length}</span>
+              <CardContent className="pb-6">
+                <div className="space-y-3 mt-4">
+                  <div className="flex justify-between items-center py-2 border-b border-border/40">
+                    <span className="text-sm text-muted-foreground">Jugadores:</span>
+                    <span className="font-bold text-white">{teamPlayers.length}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Partidos:</span>
-                    <span className="font-medium text-card-foreground">{teamMatches.length}</span>
+                  <div className="flex justify-between items-center py-2 border-b border-border/40">
+                    <span className="text-sm text-muted-foreground">Partidos:</span>
+                    <span className="font-bold text-white">{teamMatches.length}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Victorias:</span>
-                    <span className="font-medium text-primary">{wins}</span>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-sm text-muted-foreground">Victorias:</span>
+                    <span className="font-bold text-primary">{wins}</span>
                   </div>
+
                   {!canEdit && currentUser?.role === "coach" && (
-                    <div className="mt-4 pt-2 border-t border-border">
-                      <span className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Lock className="h-3 w-3" />
-                        Modo observador
-                      </span>
+                    <div className="pt-2 flex justify-end">
+                      <Lock className="h-4 w-4 text-muted-foreground/50" />
                     </div>
                   )}
                 </div>

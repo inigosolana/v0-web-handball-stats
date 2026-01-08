@@ -1,14 +1,12 @@
 "use client"
 
 import type React from "react"
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { Activity, LayoutDashboard, Shield, LogOut, Smartphone, Menu, X } from "lucide-react"
-import { useState } from "react"
+import { Activity, LayoutDashboard, Shield, LogOut, Smartphone, Menu, X, Users, Settings } from "lucide-react"
 import { useClub } from "@/contexts/club-context"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -41,10 +39,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      {/* Sidebar para móvil */}
+      {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -52,109 +50,116 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 transform border-r border-border bg-sidebar transition-transform duration-200 ease-in-out lg:relative lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 w-72 transform border-r border-sidebar-border bg-sidebar transition-transform duration-200 ease-in-out lg:relative lg:translate-x-0 flex flex-col",
           sidebarOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex h-full flex-col">
-          {/* Logo */}
-          <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-4">
-            <Link href="/dashboard" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
-                <Activity className="h-5 w-5 text-sidebar-primary-foreground" />
-              </div>
-              <span className="text-xl font-bold text-sidebar-foreground">
-                Handball<span className="text-sidebar-primary">.AI</span>
-              </span>
-            </Link>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden text-sidebar-foreground"
-              onClick={() => setSidebarOpen(false)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
+        {/* Logo */}
+        <div className="flex h-20 items-center px-6 border-b border-sidebar-border/50">
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+              <Activity className="h-5 w-5 text-black" />
+            </div>
+            <span className="text-xl font-bold text-white tracking-tight">
+              Handball<span className="text-primary">.AI</span>
+            </span>
+          </Link>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="ml-auto lg:hidden text-muted-foreground"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
 
-          {/* User info */}
-          <div className="border-b border-sidebar-border px-4 py-3 bg-sidebar-accent/30">
-            <p className="text-xs text-sidebar-foreground/60 uppercase font-semibold mb-1">Usuario actual</p>
-            <p className="text-sm font-medium text-sidebar-foreground">{currentUser.name}</p>
-            <p className="text-xs text-sidebar-primary capitalize">
+        {/* User Info Section */}
+        <div className="px-6 py-6 border-b border-sidebar-border/50">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">
+            USUARIO ACTUAL
+          </p>
+          <div className="flex flex-col">
+            <h3 className="text-sm font-medium text-white">{currentUser.name}</h3>
+            <span className="text-xs font-bold text-primary mt-0.5 capitalize">
               {currentUser.role === "superadmin"
-                ? "Superadmin"
+                ? "Administrador Global"
                 : currentUser.role === "coach"
                   ? "Entrenador"
                   : "Jugador"}
-            </p>
+            </span>
           </div>
+        </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 space-y-1 p-4">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href
-              return (
-                <Link key={item.name} href={item.href}>
-                  <div
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                      isActive
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent/50",
-                    )}
-                  >
-                    <item.icon className="h-5 w-5" />
-                    {item.name}
-                  </div>
-                </Link>
-              )
-            })}
+        {/* Navigation */}
+        <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
+          {navigation.map((item) => {
+            const isActive = pathname === item.href
+            return (
+              <Link key={item.name} href={item.href}>
+                <div
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                    isActive
+                      ? "bg-sidebar-accent text-white border-l-2 border-primary"
+                      : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-white",
+                  )}
+                >
+                  <item.icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground")} />
+                  {item.name}
+                </div>
+              </Link>
+            )
+          })}
 
-            {(currentUser.role === "superadmin" || currentUser.role === "coach") && (
+          {/* Special Button: SIMULATE APP */}
+          {(currentUser.role === "superadmin" || currentUser.role === "coach") && (
+            <div className="mt-8 px-2">
               <Link href="/dashboard/external-app">
-                <div className="mt-4 flex items-center gap-3 rounded-lg bg-secondary/20 border border-secondary/30 px-3 py-3 text-sm font-bold text-secondary transition-all hover:bg-secondary/30">
-                  <Smartphone className="h-5 w-5" />
+                <div className="group relative flex items-center justify-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-sm font-bold text-blue-400 transition-all hover:bg-blue-500/20 hover:text-blue-300">
+                  <Smartphone className="h-4 w-4" />
                   SIMULAR APP EXTERNA
                 </div>
               </Link>
-            )}
-          </nav>
+            </div>
+          )}
+        </nav>
 
-          {/* Footer */}
-          <div className="border-t border-sidebar-border p-4 space-y-2">
-            <Link href="/">
-              <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent">
-                Volver al Inicio
-              </Button>
-            </Link>
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-destructive hover:bg-destructive/10"
-              onClick={handleLogout}
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              Cerrar Sesión
+        {/* Footer */}
+        <div className="p-4 border-t border-sidebar-border/50 space-y-1">
+          <Link href="/">
+            <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-white hover:bg-sidebar-accent/50 h-10">
+              Volver al Inicio
             </Button>
-          </div>
+          </Link>
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-red-500 hover:text-red-400 hover:bg-red-500/10 h-10"
+            onClick={handleLogout}
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Cerrar Sesión
+          </Button>
         </div>
       </aside>
 
-      {/* Contenido principal */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Header móvil */}
-        <header className="flex h-16 items-center justify-between border-b border-border bg-card px-4 lg:hidden">
-          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)} className="text-card-foreground">
+      {/* Main Content Areas */}
+      <div className="flex flex-1 flex-col overflow-hidden bg-background">
+        {/* Mobile Header */}
+        <header className="flex h-16 items-center justify-between border-b border-border bg-sidebar px-4 lg:hidden">
+          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)} className="text-white">
             <Menu className="h-5 w-5" />
           </Button>
-          <span className="font-bold text-card-foreground">
+          <span className="font-bold text-white">
             Handball<span className="text-primary">.AI</span>
           </span>
           <div className="w-10" />
         </header>
 
-        {/* Área de contenido */}
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto p-8 lg:p-12">
+          {children}
+        </main>
       </div>
     </div>
   )
