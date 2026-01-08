@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useState } from "react"
 import { useClub } from "@/contexts/club-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -58,69 +59,71 @@ export default function HistoryPage() {
                   : "bg-secondary/20 text-secondary border-secondary/50"
 
             return (
-              <Card key={match.id} className="bg-card border-border">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-card-foreground">
-                        {match.teamName} vs {match.rival}
-                      </CardTitle>
-                      <CardDescription className="flex items-center gap-2 mt-1 text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
-                        {match.date.toLocaleDateString("es-ES", {
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                        })}
-                      </CardDescription>
-                    </div>
-                    <Badge variant="outline" className={resultColor}>
-                      {result}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* Marcador */}
-                    <div className="flex items-center justify-center gap-8 rounded-lg bg-muted/50 py-4">
-                      <div className="text-center">
-                        <div className="text-3xl font-bold text-primary">{match.teamScore}</div>
-                        <div className="text-sm text-muted-foreground">{match.teamName}</div>
+              <Link key={match.id} href={`/dashboard/match/${match.id}`}>
+                <Card className="bg-card border-border hover:bg-muted/50 transition-colors cursor-pointer">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-card-foreground">
+                          {match.teamName} vs {match.rival}
+                        </CardTitle>
+                        <CardDescription className="flex items-center gap-2 mt-1 text-muted-foreground">
+                          <Calendar className="h-4 w-4" />
+                          {match.date.toLocaleDateString("es-ES", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          })}
+                        </CardDescription>
                       </div>
-                      <div className="text-2xl font-bold text-muted-foreground">-</div>
-                      <div className="text-center">
-                        <div className="text-3xl font-bold text-foreground">{match.rivalScore}</div>
-                        <div className="text-sm text-muted-foreground">{match.rival}</div>
-                      </div>
+                      <Badge variant="outline" className={resultColor}>
+                        {result}
+                      </Badge>
                     </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {/* Marcador */}
+                      <div className="flex items-center justify-center gap-8 rounded-lg bg-muted/50 py-4">
+                        <div className="text-center">
+                          <div className="text-3xl font-bold text-primary">{match.teamScore}</div>
+                          <div className="text-sm text-muted-foreground">{match.teamName}</div>
+                        </div>
+                        <div className="text-2xl font-bold text-muted-foreground">-</div>
+                        <div className="text-center">
+                          <div className="text-3xl font-bold text-foreground">{match.rivalScore}</div>
+                          <div className="text-sm text-muted-foreground">{match.rival}</div>
+                        </div>
+                      </div>
 
-                    {/* Estadísticas de jugadores */}
-                    <div>
-                      <h4 className="mb-2 text-sm font-medium text-card-foreground flex items-center gap-2">
-                        <Target className="h-4 w-4 text-primary" />
-                        Goleadores
-                      </h4>
-                      <div className="space-y-2">
-                        {match.stats
-                          .sort((a, b) => b.goals - a.goals)
-                          .slice(0, 5)
-                          .map((stat) => (
-                            <div
-                              key={stat.playerId}
-                              className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2"
-                            >
-                              <span className="text-sm text-card-foreground">{stat.playerName}</span>
-                              <div className="flex items-center gap-4 text-sm">
-                                <span className="text-primary font-bold">{stat.goals} goles</span>
-                                <span className="text-muted-foreground">{stat.misses} fallos</span>
+                      {/* Estadísticas de jugadores */}
+                      <div>
+                        <h4 className="mb-2 text-sm font-medium text-card-foreground flex items-center gap-2">
+                          <Target className="h-4 w-4 text-primary" />
+                          Goleadores
+                        </h4>
+                        <div className="space-y-2">
+                          {match.stats
+                            .sort((a, b) => b.goals - a.goals)
+                            .slice(0, 5)
+                            .map((stat) => (
+                              <div
+                                key={stat.playerId}
+                                className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2"
+                              >
+                                <span className="text-sm text-card-foreground">{stat.playerName}</span>
+                                <div className="flex items-center gap-4 text-sm">
+                                  <span className="text-primary font-bold">{stat.goals} goles</span>
+                                  <span className="text-muted-foreground">{stat.misses} fallos</span>
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </Link>
             )
           })
         )}
