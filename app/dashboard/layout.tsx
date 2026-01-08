@@ -57,11 +57,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Logo */}
         <div className="flex h-20 items-center px-6 border-b border-sidebar-border/50">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Activity className="h-5 w-5 text-black" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
+              <Activity className="h-5 w-5 text-sidebar-primary-foreground" />
             </div>
-            <span className="text-xl font-bold text-white tracking-tight">
-              Handball<span className="text-primary">.AI</span>
+            <span className="text-xl font-bold text-sidebar-foreground">
+              7metrics
             </span>
           </Link>
           <Button

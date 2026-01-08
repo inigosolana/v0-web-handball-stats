@@ -65,7 +65,7 @@ export default function LoginPage() {
               <Activity className="h-7 w-7 text-primary-foreground" />
             </div>
             <span className="text-3xl font-bold text-foreground">
-              Handball<span className="text-primary">.AI</span>
+              7metrics
             </span>
           </div>
           <h1 className="text-2xl font-bold text-foreground mb-2">Login Simulado - Sistema RBAC</h1>

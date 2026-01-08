@@ -9,12 +9,10 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Activity className="h-5 w-5 text-primary-foreground" />
+            <div className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-primary" />
+              <span className="text-lg font-bold">7metrics</span>
             </div>
-            <span className="text-xl font-bold text-foreground">
-              Handball<span className="text-primary">.AI</span>
-            </span>
           </div>
           <Link href="/login">
             <Button className="bg-primary text-primary-foreground hover:bg-primary/90">Acceso Club / Login</Button>
@@ -149,7 +147,7 @@ export default function LandingPage() {
                 Handball<span className="text-primary">.AI</span>
               </span>
             </div>
-            <p className="text-sm text-muted-foreground">© 2025 Handball.AI - Gestión Profesional de Balonmano</p>
+            <p className="text-sm text-muted-foreground">© 2025 7metrics - Gestión Profesional de Balonmano</p>
           </div>
         </div>
       </footer>

@@ -9,8 +9,8 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
 // const _geistMono = Geist_Mono({ subsets: ["latin"] }) // Removed unused mono font
 
 export const metadata: Metadata = {
-  title: "Handball.AI - Gestión Profesional de Balonmano",
-  description: "Plataforma SaaS completa para gestión y análisis de equipos de balonmano",
+  title: "7metrics - Gestión Profesional de Balonmano",
+  description: "Plataforma avanzada para la gestión y análisis de clubes de balonmano",
   generator: "v0.app",
   icons: {
     icon: [
