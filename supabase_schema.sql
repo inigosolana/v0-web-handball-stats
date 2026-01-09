@@ -27,6 +27,9 @@ create table if not exists public.match_events (
   coord_y float, -- 0-100%
   tags text[], -- Array of tags e.g. ['fast_break', 'wing_shot']
   is_verified boolean default false, -- For AI training data
+  confidence_score float, -- 0.0 to 1.0
+  model_version text, -- e.g. 'v1.0.0'
+  feedback_status text default 'pending', -- 'pending', 'approved', 'rejected', 'corrected'
   metadata jsonb -- For any extra data
 );
 

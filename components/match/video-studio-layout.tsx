@@ -4,7 +4,7 @@ import { useState, useRef, useMemo } from "react"
 import { VideoSmartPlayer } from "./video-smart-player"
 import { ActionCutter } from "./action-cutter"
 import { Button } from "@/components/ui/button"
-import { Download, Trash2, Filter, Activity, Share2 } from "lucide-react"
+import { Download, Trash2, Filter, Activity, Share2, BrainCircuit, Check, X, Loader2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -23,6 +23,9 @@ export interface VideoAction {
     tags: string[]
     phase?: string
     state?: string
+    isVerified?: boolean
+    confidenceScore?: number
+    feedbackStatus?: 'pending' | 'approved' | 'rejected' | 'corrected'
 }
 
 interface VideoStudioLayoutProps {
@@ -59,6 +62,55 @@ export function VideoStudioLayout({ videoUrl, initialActions = [] }: VideoStudio
         // If we click same timestamp twice, it won't trigger change.
         // A random epsilon could fix this, or a timestamp in the prop.
         setTimeout(() => setSeekTarget(null), 100)
+    }
+
+    const [isScanning, setIsScanning] = useState(false)
+
+    const handleAiScan = async () => {
+        setIsScanning(true)
+        try {
+            const res = await fetch('/api/ai/scan', { method: 'POST' })
+            const data = await res.json()
+
+            if (data.success && data.events) {
+                const aiActions = data.events.map((e: any) => ({
+                    id: crypto.randomUUID(),
+                    startTime: e.time_seconds,
+                    endTime: e.end_time || e.time_seconds + 5,
+                    eventType: e.event_type,
+                    teamId: e.team_id,
+                    playerId: '', // AI might not know player yet
+                    tags: e.tags || [],
+                    phase: e.phase,
+                    state: e.state,
+                    isVerified: false,
+                    confidenceScore: e.confidence_score,
+                    feedbackStatus: 'pending'
+                }))
+                setActions(prev => [...prev, ...aiActions])
+            }
+        } catch (error) {
+            console.error("AI Scan failed", error)
+        } finally {
+            setIsScanning(false)
+        }
+    }
+
+    const handleVerifyAction = (id: string, status: 'approved' | 'rejected') => {
+        setActions(prev => prev.map(a => {
+            if (a.id !== id) return a
+            if (status === 'rejected') return { ...a, feedbackStatus: 'rejected' } // Or delete? Let's keep marked as rejected for training
+            return { ...a, isVerified: true, feedbackStatus: 'approved' }
+        }))
+        // If rejected, we might want to filter it out from visuals or keep it greyed out?
+        if (status === 'rejected') {
+            // Option: Remove from list immediately or keep 'deleted' state
+            // For "Learning Loop", keeping it as "Rejected" is valuable.
+            // But for UI clutter, maybe hide it.
+            // Let's hide it from the main list but keep in DB (logic for later).
+            // For now, let's just remove it from the view effectively.
+            setActions(prev => prev.filter(a => a.id !== id))
+        }
     }
 
     const handleDownloadData = (action: VideoAction) => {
@@ -199,10 +251,22 @@ export function VideoStudioLayout({ videoUrl, initialActions = [] }: VideoStudio
                                 <div className="flex items-center gap-2">
                                     <Activity className="w-4 h-4 text-primary" />
                                     <CardTitle className="text-base">Actions ({filteredActions.length})</CardTitle>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="ml-2 h-7 gap-1 text-xs border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-300"
+                                        onClick={handleAiScan}
+                                        disabled={isScanning}
+                                    >
+                                        {isScanning ? <Loader2 className="w-3 h-3 animate-spin" /> : <BrainCircuit className="w-3 h-3" />}
+                                        {isScanning ? "Scanning..." : "AI Auto-Clip"}
+                                    </Button>
                                 </div>
-                                <Button variant={showFilters ? "secondary" : "ghost"} size="icon" className="h-8 w-8" onClick={() => setShowFilters(!showFilters)}>
-                                    <Filter className="w-4 h-4" />
-                                </Button>
+                                <div className="flex items-center gap-1">
+                                    <Button variant={showFilters ? "secondary" : "ghost"} size="icon" className="h-8 w-8" onClick={() => setShowFilters(!showFilters)}>
+                                        <Filter className="w-4 h-4" />
+                                    </Button>
+                                </div>
                             </div>
 
                             {/* Filters Panel */}
@@ -232,7 +296,13 @@ export function VideoStudioLayout({ videoUrl, initialActions = [] }: VideoStudio
                             <div className="h-full w-full overflow-y-auto px-2 py-2">
                                 <div className="space-y-2">
                                     {filteredActions.slice().reverse().map((action) => (
-                                        <div key={action.id} className="bg-background border rounded-lg p-3 hover:shadow-md transition-shadow flex items-start gap-3 group relative">
+                                        <div
+                                            key={action.id}
+                                            className={`
+                                                relative border rounded-lg p-3 hover:shadow-md transition-shadow flex items-start gap-3 group
+                                                ${!action.isVerified && action.confidenceScore ? 'border-dashed border-blue-300 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-900/20' : 'bg-background'}
+                                            `}
+                                        >
                                             <div
                                                 className="mt-1 cursor-pointer bg-primary/10 text-primary rounded px-2 py-1 text-xs font-mono font-bold hover:bg-primary/20"
                                                 onClick={() => handleJumpToAction(action.startTime)}
@@ -246,16 +316,43 @@ export function VideoStudioLayout({ videoUrl, initialActions = [] }: VideoStudio
                                                         {action.teamId === 'home' ? 'Home' : 'Away'}
                                                     </Badge>
                                                     <span className="font-semibold text-sm capitalize">{action.eventType.replace('_', ' ')}</span>
+                                                    {!action.isVerified && action.confidenceScore && (
+                                                        <Badge variant="outline" className="text-[10px] h-5 px-1 border-blue-400 text-blue-600">
+                                                            {(action.confidenceScore * 100).toFixed(0)}% AI
+                                                        </Badge>
+                                                    )}
                                                 </div>
                                                 <div className="text-xs text-muted-foreground mt-1 flex gap-2 items-center">
                                                     <span>#{action.playerId || '?'}</span>
                                                     {action.tags.length > 0 && <span>•</span>}
+                                                    {action.phase && <span className="text-[10px] bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-1 rounded">{action.phase}</span>}
                                                     <div className="flex gap-1 overflow-hidden">
                                                         {action.tags.map(tag => (
                                                             <span key={tag} className="bg-muted px-1 rounded text-[10px]">{tag}</span>
                                                         ))}
                                                     </div>
                                                 </div>
+
+                                                {/* Verification Buttons */}
+                                                {!action.isVerified && action.feedbackStatus === 'pending' && (
+                                                    <div className="flex gap-2 mt-2">
+                                                        <Button
+                                                            size="xs"
+                                                            className="h-6 gap-1 bg-green-600 hover:bg-green-700 text-white"
+                                                            onClick={() => handleVerifyAction(action.id, 'approved')}
+                                                        >
+                                                            <Check className="w-3 h-3" /> Confirm
+                                                        </Button>
+                                                        <Button
+                                                            size="xs"
+                                                            variant="outline"
+                                                            className="h-6 gap-1 text-destructive border-destructive/50 hover:bg-destructive/10"
+                                                            onClick={() => handleVerifyAction(action.id, 'rejected')}
+                                                        >
+                                                            <X className="w-3 h-3" /> Reject
+                                                        </Button>
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute right-2 top-2 bg-background/80 p-1 rounded backdrop-blur-sm">
                                                 <Button size="icon" variant="ghost" className="h-6 w-6" title="Download Metadata" onClick={() => handleDownloadData(action)}>
