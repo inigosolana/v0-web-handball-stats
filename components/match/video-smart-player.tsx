@@ -9,15 +9,28 @@ interface VideoSmartPlayerProps {
     src: string
     events?: { id: string; time: number; label: string }[]
     onvideoTimeUpdate?: (time: number) => void
+    seekTo?: number | null
 }
 
-export function VideoSmartPlayer({ src, events = [] }: VideoSmartPlayerProps) {
+export function VideoSmartPlayer({ src, events = [], onvideoTimeUpdate, seekTo }: VideoSmartPlayerProps) {
     const videoRef = useRef<HTMLVideoElement>(null)
     const [isPlaying, setIsPlaying] = useState(false)
     const [currentTime, setCurrentTime] = useState(0)
     const [duration, setDuration] = useState(0)
     const [volume, setVolume] = useState(1)
     const [isMuted, setIsMuted] = useState(false)
+
+    // Handle external seek requests
+    useEffect(() => {
+        if (seekTo !== undefined && seekTo !== null && videoRef.current) {
+            videoRef.current.currentTime = seekTo
+            if (!isPlaying) {
+                // Option: Auto-play on seek? Let's assume yes for "Jump to action"
+                videoRef.current.play().catch(() => { })
+                setIsPlaying(true)
+            }
+        }
+    }, [seekTo])
 
     const togglePlay = () => {
         if (videoRef.current) {
@@ -32,7 +45,11 @@ export function VideoSmartPlayer({ src, events = [] }: VideoSmartPlayerProps) {
 
     const handleTimeUpdate = () => {
         if (videoRef.current) {
-            setCurrentTime(videoRef.current.currentTime)
+            const time = videoRef.current.currentTime
+            setCurrentTime(time)
+            if (onvideoTimeUpdate) {
+                onvideoTimeUpdate(time)
+            }
         }
     }
 
@@ -77,7 +94,7 @@ export function VideoSmartPlayer({ src, events = [] }: VideoSmartPlayerProps) {
                         <Slider
                             value={[currentTime]}
                             max={duration}
-                            step={1}
+                            step={0.1}
                             onValueChange={handleSeek}
                             className="cursor-pointer"
                         />
