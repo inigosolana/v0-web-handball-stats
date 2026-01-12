@@ -26,6 +26,7 @@ export interface VideoAction {
     isVerified?: boolean
     confidenceScore?: number
     feedbackStatus?: 'pending' | 'approved' | 'rejected' | 'corrected'
+    clipPath?: string
 }
 
 interface VideoStudioLayoutProps {
@@ -70,30 +71,29 @@ export function VideoStudioLayout({ videoUrl, initialActions = [] }: VideoStudio
 
     const handleJumpToAction = (time: number) => {
         setSeekTarget(time)
-        // Reset seek target after short delay to allow re-seek if needed, 
-        // though the useEffect in player handles changes.
-        // If we click same timestamp twice, it won't trigger change.
-        // A random epsilon could fix this, or a timestamp in the prop.
         setTimeout(() => setSeekTarget(null), 100)
     }
 
     const handleDownloadClip = (action: VideoAction) => {
-        // Build the URL for the cut endpoint
-        const params = new URLSearchParams({
-            video: videoUrl,
-            start: action.startTime.toString(),
-            end: action.endTime.toString(),
-            label: `${action.eventType}_${action.teamId}_${action.playerId || 'unknown'}`
-        })
-        const url = `/api/video/cut?${params.toString()}`
-
-        // Trigger download
-        const a = document.createElement('a')
-        a.href = url
-        a.download = '' // filename is set by Content-Disposition header
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
+        if (action.clipPath) {
+            // Direct download if file exists
+            const a = document.createElement('a')
+            a.href = action.clipPath
+            a.download = `clip_${action.eventType}_${action.startTime.toFixed(0)}.mp4`
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+        } else {
+            // Fallback to on-the-fly cut (not implemented fully, but keeping logic structure)
+            const params = new URLSearchParams({
+                video: videoUrl,
+                start: action.startTime.toString(),
+                end: action.endTime.toString(),
+                label: `${action.eventType}_${action.teamId}_${action.playerId || 'unknown'}`
+            })
+            // For now just alert if no clip
+            alert("No pre-generated clip available for this action.")
+        }
     }
 
     const [isScanning, setIsScanning] = useState(false)
@@ -101,7 +101,11 @@ export function VideoStudioLayout({ videoUrl, initialActions = [] }: VideoStudio
     const handleAiScan = async () => {
         setIsScanning(true)
         try {
-            const res = await fetch('/api/ai/scan', { method: 'POST' })
+            const res = await fetch('/api/ai/scan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ videoPath: videoUrl }) // Ensure videoPath is sent
+            })
             const data = await res.json()
 
             if (data.success && data.events) {
@@ -117,7 +121,8 @@ export function VideoStudioLayout({ videoUrl, initialActions = [] }: VideoStudio
                     state: e.state,
                     isVerified: false,
                     confidenceScore: e.confidence_score,
-                    feedbackStatus: 'pending'
+                    feedbackStatus: 'pending',
+                    clipPath: e.clip_path
                 }))
                 setActions(prev => [...prev, ...aiActions])
             }
@@ -131,15 +136,10 @@ export function VideoStudioLayout({ videoUrl, initialActions = [] }: VideoStudio
     const handleVerifyAction = (id: string, status: 'approved' | 'rejected') => {
         setActions(prev => prev.map(a => {
             if (a.id !== id) return a
-            if (status === 'rejected') return { ...a, feedbackStatus: 'rejected' } // Or delete? Let's keep marked as rejected for training
+            if (status === 'rejected') return { ...a, feedbackStatus: 'rejected' }
             return { ...a, isVerified: true, feedbackStatus: 'approved' }
         }))
-        // If rejected, we might want to filter it out from visuals or keep it greyed out?
         if (status === 'rejected') {
-            // Option: Remove from list immediately or keep 'deleted' state
-            // For "Learning Loop", keeping it as "Rejected" is valuable.
-            // But for UI clutter, maybe hide it.
-            // For now, let's just remove it from the view effectively.
             setActions(prev => prev.filter(a => a.id !== id))
         }
     }
@@ -168,8 +168,12 @@ export function VideoStudioLayout({ videoUrl, initialActions = [] }: VideoStudio
     }
 
     const handleDownloadMontage = async () => {
-        const selectedClips = actions.filter(a => selectedActionIds.has(a.id))
-        if (selectedClips.length === 0) return
+        const selectedClips = actions.filter(a => selectedActionIds.has(a.id) && a.clipPath)
+
+        if (selectedClips.length === 0) {
+            alert("No valid clips selected (only AI-detected clips can be merged currently)")
+            return
+        }
 
         setIsMerging(true)
         try {
@@ -177,8 +181,7 @@ export function VideoStudioLayout({ videoUrl, initialActions = [] }: VideoStudio
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    videoUrl,
-                    clips: selectedClips
+                    clips: selectedClips.map(a => a.clipPath)
                 })
             })
 

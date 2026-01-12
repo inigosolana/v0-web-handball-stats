@@ -3,51 +3,69 @@ import { spawn } from 'child_process'
 import path from 'path'
 
 export async function POST(req: Request) {
-    // try {
-    //     // Real AI Integration
-    //     // In a production env, you might use a Queue (BullMQ) + Worker
-    //     const pythonScript = path.join(process.cwd(), 'python', 'detect_actions.py')
-    //     // We mock a video path for the script. In reality, pass the req.body.videoPath
-    //     const videoPath = "mock_video.mp4" 
+    try {
+        const body = await req.json()
+        const { videoPath } = body
 
-    //     return new Promise((resolve) => {
-    //         const pyProcess = spawn('python', [pythonScript, '--video', videoPath])
+        if (!videoPath) {
+            return NextResponse.json({ success: false, error: "No videoPath provided" }, { status: 400 })
+        }
 
-    //         let dataString = ''
-    //         let errorString = ''
+        // Real AI Integration
+        const pythonScript = path.join(process.cwd(), 'python', 'handball_pipeline.py')
 
-    //         pyProcess.stdout.on('data', (data) => {
-    //             dataString += data.toString()
-    //         })
+        // Resolve path if it's relative to public
+        let absoluteVideoPath = videoPath
+        if (!path.isAbsolute(videoPath)) {
+            // Remove leading slash if present for path.join correctness
+            const relativePath = videoPath.startsWith('/') ? videoPath.substring(1) : videoPath
+            absoluteVideoPath = path.join(process.cwd(), 'public', relativePath)
+        }
 
-    //         pyProcess.stderr.on('data', (data) => {
-    //             errorString += data.toString()
-    //         })
+        console.log(`Running analysis on: ${absoluteVideoPath}`)
 
-    //         pyProcess.on('close', (code) => {
-    //             if (code !== 0) {
-    //                 console.error("Python Error:", errorString)
-    //                 // Fallback to Mock if python fails (e.g. not installed)
-    //                 resolve(NextResponse.json(getMockData())) 
-    //             } else {
-    //                 try {
-    //                     const result = JSON.parse(dataString)
-    //                     resolve(NextResponse.json(result))
-    //                 } catch (e) {
-    //                     resolve(NextResponse.json(getMockData()))
-    //                 }
-    //             }
-    //         })
-    //     })
+        return new Promise((resolve) => {
+            const pyProcess = spawn('python', [pythonScript, '--video', absoluteVideoPath])
 
-    // } catch (e) {
-    //     return NextResponse.json(getMockData())
-    // }
+            let dataString = ''
+            let errorString = ''
 
-    // FOR DEMO STABILITY: keeping the Mock active but "Simulating" the Python delay
-    // To enable Python, uncomment above and remove below.
-    await new Promise(r => setTimeout(r, 2000))
-    return NextResponse.json(getMockData())
+            pyProcess.stdout.on('data', (data: Buffer) => {
+                const msg = data.toString()
+                dataString += msg
+                // console.log("Python Output:", msg) // Too verbose for large JSON
+            })
+
+            pyProcess.stderr.on('data', (data: Buffer) => {
+                const msg = data.toString()
+                errorString += msg
+                console.log("Python Log:", msg) // Log progress and errors
+            })
+
+            pyProcess.on('close', (code: number) => {
+                if (code !== 0) {
+                    console.error("Python Error:", errorString)
+                    resolve(NextResponse.json({ success: false, error: subProcessError(errorString) }, { status: 500 }))
+                } else {
+                    try {
+                        const result = JSON.parse(dataString)
+                        resolve(NextResponse.json(result))
+                    } catch (e) {
+                        console.error("JSON Parse Error:", dataString)
+                        resolve(NextResponse.json({ success: false, error: "Failed to parse Python output" }, { status: 500 }))
+                    }
+                }
+            })
+        })
+
+    } catch (e) {
+        return NextResponse.json({ success: false, error: String(e) }, { status: 500 })
+    }
+
+    // Helper to clean up python error message
+    function subProcessError(stderr: string) {
+        return stderr || "Unknown Python error"
+    }
 }
 
 function getMockData() {

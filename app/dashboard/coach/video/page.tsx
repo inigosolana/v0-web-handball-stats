@@ -21,11 +21,35 @@ export default function VideoAnalysisPage() {
     const [initialActions, setInitialActions] = useState<any[]>([])
     const [processing, setProcessing] = useState(false)
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0]
             setUploadedFile(file)
-            setVideoUrl(URL.createObjectURL(file))
+
+            // Temporary blob for immediate feedback
+            const blobUrl = URL.createObjectURL(file)
+            setVideoUrl(blobUrl)
+
+            // Auto-upload
+            const formData = new FormData()
+            formData.append('file', file)
+
+            try {
+                // Show uploading state if we had one, for now assume fast local upload
+                const res = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                const data = await res.json()
+                if (data.success) {
+                    setVideoUrl(data.url) // Update to server path
+                    console.log("Uploaded video to:", data.url)
+                } else {
+                    alert("Upload failed. AI analysis might not work.")
+                }
+            } catch (err) {
+                console.error("Upload error", err)
+            }
         }
     }
 
@@ -45,7 +69,11 @@ export default function VideoAnalysisPage() {
                 // Determine if we should use Mock or Real AI based on env or just call the same endpoint
                 // The endpoint /api/ai/scan is currently the mock one.
                 // We will update it later to call python if available.
-                const res = await fetch('/api/ai/scan', { method: 'POST' })
+                const res = await fetch('/api/ai/scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ videoPath: videoUrl })
+                })
                 const data = await res.json()
 
                 if (data.success && data.events) {
@@ -61,7 +89,8 @@ export default function VideoAnalysisPage() {
                         state: e.state,
                         isVerified: false,
                         confidenceScore: e.confidence_score,
-                        feedbackStatus: 'pending'
+                        feedbackStatus: 'pending',
+                        clipPath: e.clip_path
                     }))
                     setInitialActions(aiActions)
                 }
