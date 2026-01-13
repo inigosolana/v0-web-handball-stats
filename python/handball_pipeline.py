@@ -245,9 +245,27 @@ def export_clips(video_path, events, output_dir):
                 
                 # Cut
                 clip = video.subclip(start, end)
-                # Write file (using slower preset for better compression/compat if needed, or fast)
-                # target_bitrate is optional, standard is fine
-                clip.write_videofile(filepath, codec="libx264", audio_codec="aac", verbose=False, logger=None, preset='ultrafast')
+                # Write file (try GPU then CPU)
+                try:
+                    clip.write_videofile(
+                        filepath, 
+                        codec="h264_nvenc", 
+                        audio_codec="aac", 
+                        verbose=False, 
+                        logger=None, 
+                        preset='fast',
+                        ffmpeg_params=['-gpu', '0']
+                    )
+                except Exception:
+                    # Fallback
+                    clip.write_videofile(
+                        filepath, 
+                        codec="libx264", 
+                        audio_codec="aac", 
+                        verbose=False, 
+                        logger=None, 
+                        preset='ultrafast'
+                    )
                 
                 # Add file path to event object for frontend
                 # Relative path for web

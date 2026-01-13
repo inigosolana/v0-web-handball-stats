@@ -19,14 +19,29 @@ def merge_clips(clip_paths, output_path):
             return
 
         final_clip = concatenate_videoclips(clips, method="compose") # compose handles different sizes if needed
-        final_clip.write_videofile(
-            output_path, 
-            codec="libx264", 
-            audio_codec="aac", 
-            verbose=False, 
-            logger=None, # reduce stderr noise
-            preset='ultrafast'
-        )
+        # Try GPU acceleration first
+        try:
+            # NVENC (Nvidia)
+            final_clip.write_videofile(
+                output_path, 
+                codec="h264_nvenc", 
+                audio_codec="aac", 
+                verbose=False, 
+                logger=None,
+                preset='fast', # nvenc doesn't use ultrafast in same way, fast is good
+                ffmpeg_params=['-gpu', '0'] # Optional: specific GPU
+            )
+        except Exception as gpu_error:
+            # Fallback to CPU
+            print(f"GPU encoding failed, using CPU: {gpu_error}")
+            final_clip.write_videofile(
+                output_path, 
+                codec="libx264", 
+                audio_codec="aac", 
+                verbose=False, 
+                logger=None, 
+                preset='ultrafast'
+            )
         
         # Cleanup
         for clip in clips:
