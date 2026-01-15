@@ -97,14 +97,49 @@ export function VideoStudioLayout({ videoUrl, initialActions = [] }: VideoStudio
     }
 
     const [isScanning, setIsScanning] = useState(false)
+    const [scanProgress, setScanProgress] = useState(0)
+    const [scanStatus, setScanStatus] = useState("")
+    const [scanEta, setScanEta] = useState<number | null>(null)
+
+    // Polling for progress
+    useEffect(() => {
+        let interval: NodeJS.Timeout
+        if (isScanning) {
+            interval = setInterval(async () => {
+                try {
+                    const filename = videoUrl.split('/').pop()
+                    if (!filename) return
+
+                    const res = await fetch(`/api/video/status?filename=${encodeURIComponent(filename)}`)
+                    const data = await res.json()
+                    if (data.progress !== undefined) {
+                        setScanProgress(data.progress || 0)
+                        setScanStatus(data.status || "")
+                        setScanEta(data.eta_seconds || null)
+                    }
+                } catch (e) {
+                    console.error("Poll Error", e)
+                }
+            }, 1000)
+        }
+        return () => clearInterval(interval)
+    }, [isScanning, videoUrl])
 
     const handleAiScan = async () => {
         setIsScanning(true)
+        setScanProgress(0)
+        setScanStatus("starting")
         try {
-            const res = await fetch('/api/ai/scan', {
+            const filename = videoUrl.split('/').pop()
+            if (!filename) {
+                console.error("No filename found")
+                return
+            }
+
+            const res = await fetch('/api/video/analyze', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ videoPath: videoUrl }) // Ensure videoPath is sent
+                body: JSON.stringify({ filename })
             })
             const data = await res.json()
 
@@ -115,7 +150,7 @@ export function VideoStudioLayout({ videoUrl, initialActions = [] }: VideoStudio
                     endTime: e.end_time || e.time_seconds + 5,
                     eventType: e.event_type,
                     teamId: e.team_id,
-                    playerId: '', // AI might not know player yet
+                    playerId: '',
                     tags: e.tags || [],
                     phase: e.phase,
                     state: e.state,
@@ -130,18 +165,38 @@ export function VideoStudioLayout({ videoUrl, initialActions = [] }: VideoStudio
             console.error("AI Scan failed", error)
         } finally {
             setIsScanning(false)
+            setScanProgress(0)
+            setScanEta(null)
         }
     }
 
     const handleVerifyAction = (id: string, status: 'approved' | 'rejected') => {
-        setActions(prev => prev.map(a => {
-            if (a.id !== id) return a
-            if (status === 'rejected') return { ...a, feedbackStatus: 'rejected' }
-            return { ...a, isVerified: true, feedbackStatus: 'approved' }
-        }))
-        if (status === 'rejected') {
-            setActions(prev => prev.filter(a => a.id !== id))
+        // Find next pending action before modifying state
+        // We use filteredActions to ensure we follow the user's current view list
+        const currentIndex = filteredActions.findIndex(a => a.id === id)
+        let nextAction = null
+
+        // Search forward from current index
+        for (let i = currentIndex + 1; i < filteredActions.length; i++) {
+            if (!filteredActions[i].isVerified && filteredActions[i].feedbackStatus === 'pending') {
+                nextAction = filteredActions[i]
+                break
+            }
         }
+
+        if (nextAction) {
+            handleJumpToAction(nextAction.startTime)
+        }
+
+        setActions(prev => {
+            if (status === 'rejected') {
+                return prev.filter(a => a.id !== id)
+            }
+            return prev.map(a => {
+                if (a.id !== id) return a
+                return { ...a, isVerified: true, feedbackStatus: 'approved' }
+            })
+        })
     }
 
     const handleDownloadData = (action: VideoAction) => {
@@ -224,7 +279,7 @@ export function VideoStudioLayout({ videoUrl, initialActions = [] }: VideoStudio
     const filteredActions = useMemo(() => {
         return actions.filter(action => {
             if (filterTeam !== "all" && action.teamId !== filterTeam) return false
-            if (filterPlayer && action.playerId !== filterPlayer) return false
+            if (filterPlayer && !action.playerId.toLowerCase().includes(filterPlayer.toLowerCase())) return false
             return true
         })
     }, [actions, filterTeam, filterPlayer])
@@ -353,10 +408,27 @@ export function VideoStudioLayout({ videoUrl, initialActions = [] }: VideoStudio
                                     Merge ({selectedActionIds.size})
                                 </Button>
                             )}
-                            <Button size="sm" variant="outline" className="gap-2" onClick={handleAiScan} disabled={isScanning}>
-                                {isScanning ? <Loader2 className="w-3 h-3 animate-spin" /> : <BrainCircuit className="w-3 h-3" />}
-                                {isScanning ? "Scanning..." : "AI Auto-Clip"}
-                            </Button>
+                            <div className="flex flex-col gap-1 min-w-[200px] items-end">
+                                {isScanning ? (
+                                    <div className="w-full flex flex-col gap-1">
+                                        <div className="flex justify-between text-[10px] text-muted-foreground">
+                                            <span>{scanStatus}</span>
+                                            <span>{scanEta ? `${Math.ceil(scanEta)}s left` : `${scanProgress}%`}</span>
+                                        </div>
+                                        <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-primary transition-all duration-500 ease-in-out"
+                                                style={{ width: `${scanProgress}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <Button size="sm" variant="outline" className="gap-2" onClick={handleAiScan}>
+                                        <BrainCircuit className="w-3 h-3" />
+                                        AI Auto-Clip
+                                    </Button>
+                                )}
+                            </div>
                         </div>
                     </div>
                     <Card className="flex-1 flex flex-col min-h-0 border-l-4 border-l-primary/20">
@@ -420,8 +492,11 @@ export function VideoStudioLayout({ videoUrl, initialActions = [] }: VideoStudio
 
                                             <div
                                                 className="mt-1 cursor-pointer bg-primary/10 text-primary rounded px-2 py-1 text-xs font-mono font-bold hover:bg-primary/20"
-                                                onClick={() => handleJumpToAction(action.startTime)}
-                                                title="Click to Jump to Video"
+                                                onClick={() => {
+                                                    handleJumpToAction(action.startTime)
+                                                    // Optional: Select it for montage too? No, that might be confusing.
+                                                }}
+                                                title="Revisar Jugada"
                                             >
                                                 {formatTime(action.startTime)}
                                             </div>

@@ -37,3 +37,6 @@ next-env.d.ts
 
 public/uploads/
 venv/
+
+__pycache__/
+Full-Handball-Dataset-1/

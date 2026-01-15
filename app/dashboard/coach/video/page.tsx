@@ -98,12 +98,14 @@ export default function VideoAnalysisPage() {
             setProcessing(true)
             try {
                 // Determine if we should use Mock or Real AI based on env or just call the same endpoint
-                // The endpoint /api/ai/scan is currently the mock one.
-                // We will update it later to call python if available.
-                const res = await fetch('/api/ai/scan', {
+                // We utilize the real python pipeline via /api/video/analyze
+                const filename = videoUrl.split('/').pop()
+                if (!filename) throw new Error("Could not determine filename from URL")
+
+                const res = await fetch('/api/video/analyze', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ videoPath: videoUrl })
+                    body: JSON.stringify({ filename })
                 })
                 const data = await res.json()
 
@@ -114,7 +116,7 @@ export default function VideoAnalysisPage() {
                         endTime: e.end_time || e.time_seconds + 5,
                         eventType: e.event_type,
                         teamId: e.team_id,
-                        playerId: '',
+                        playerId: e.player_name || '',
                         tags: e.tags || [],
                         phase: e.phase,
                         state: e.state,
@@ -204,10 +206,14 @@ export default function VideoAnalysisPage() {
 
                                         const statusInterval = setInterval(async () => {
                                             if (!videoUrl) return
+                                            // Extract filename from URL (e.g., /uploads/myvideo.mp4 -> myvideo.mp4)
+                                            const filename = videoUrl.split('/').pop()
+                                            if (!filename) return
+
                                             try {
-                                                const res = await fetch(`/api/ai/status?videoPath=${encodeURIComponent(videoUrl)}`)
+                                                const res = await fetch(`/api/video/status?filename=${encodeURIComponent(filename)}`)
                                                 const data = await res.json()
-                                                if (data.success && typeof data.progress === 'number') {
+                                                if (typeof data.progress === 'number') {
                                                     setProgress(data.progress)
                                                     // Optional: Update status text if we added that state
                                                 }

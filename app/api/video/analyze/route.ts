@@ -42,15 +42,14 @@ export async function POST(req: NextRequest) {
             '--export-clips'
         ], {
             detached: true,
-            stdio: 'ignore' // or 'inherit' for debugging, but 'ignore' for detached
+            stdio: 'ignore'
         })
 
         child.unref()
 
         return NextResponse.json({
-            success: true,
-            message: 'Analysis started',
-            progressFile: `/uploads/${filename}.progress.json`
+            status: 'processing',
+            message: 'El video se está procesando en segundo plano'
         })
 
     } catch (e: any) {
