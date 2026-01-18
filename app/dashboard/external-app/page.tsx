@@ -1,151 +1,147 @@
 "use client"
 
-import { useState } from "react"
-import { useClub } from "@/contexts/club-context"
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Smartphone, Download, Database, Zap } from "lucide-react"
+import { RefreshCw, Calendar, Clock, Trophy, AlertCircle } from "lucide-react"
+import { getMatches, type Match } from "@/app/actions/sevenmetrics"
+import { format } from "date-fns"
+import { es } from "date-fns/locale"
 
 export default function ExternalAppPage() {
-  const { currentUser, players, matches, teams } = useClub()
-  const [syncing, setSyncing] = useState(false)
+  const router = useRouter()
+  const [matches, setMatches] = useState<Match[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleSync = () => {
-    setSyncing(true)
-    setTimeout(() => {
-      alert("Datos sincronizados correctamente con la app externa!")
-      setSyncing(false)
-    }, 1500)
+  const fetchMatches = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await getMatches()
+      setMatches(data)
+    } catch (err) {
+      setError("No se pudieron cargar los partidos. Verifica que la API esté activa.")
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleExport = () => {
-    const exportData = {
-      players: players.length,
-      matches: matches.length,
-      teams: teams.length,
-      timestamp: new Date().toISOString(),
+  useEffect(() => {
+    fetchMatches()
+  }, [])
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "IN_PROGRESS":
+        return "default" // Primary color
+      case "FINISHED":
+        return "secondary" // Gray/Secondary
+      case "PAUSED":
+        return "destructive" // Red-ish/Orange
+      default:
+        return "outline"
     }
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `handball-data-${Date.now()}.json`
-    a.click()
+  }
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "IN_PROGRESS":
+        return "EN JUEGO"
+      case "FINISHED":
+        return "FINALIZADO"
+      case "PAUSED":
+        return "PAUSADO"
+      case "SETUP":
+        return "CONFIGURACIÓN"
+      default:
+        return status
+    }
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-secondary/20 border border-secondary/30">
-          <Smartphone className="h-6 w-6 text-secondary" />
-        </div>
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Simulación de App Externa</h1>
-          <p className="text-muted-foreground">Conexión y sincronización con dispositivos móviles</p>
+          <h1 className="text-3xl font-bold text-foreground">Partidos Externos</h1>
+          <p className="text-muted-foreground">Sincronización con botoneras y API externa</p>
         </div>
+        <Button variant="outline" onClick={fetchMatches} disabled={loading}>
+          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          Actualizar
+        </Button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Card de estado */}
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-card-foreground flex items-center gap-2">
-              <Database className="h-5 w-5 text-primary" />
-              Estado de Sincronización
-            </CardTitle>
-            <CardDescription className="text-muted-foreground">Datos disponibles para compartir</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center">
-                <p className="text-3xl font-bold text-primary">{teams.length}</p>
-                <p className="text-xs text-muted-foreground">Equipos</p>
-              </div>
-              <div className="text-center">
-                <p className="text-3xl font-bold text-secondary">{players.length}</p>
-                <p className="text-xs text-muted-foreground">Jugadores</p>
-              </div>
-              <div className="text-center">
-                <p className="text-3xl font-bold text-card-foreground">{matches.length}</p>
-                <p className="text-xs text-muted-foreground">Partidos</p>
-              </div>
-            </div>
-            <div className="pt-4 border-t border-border">
-              <p className="text-sm text-muted-foreground">
-                <strong>Usuario conectado:</strong> {currentUser?.name}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Rol: {currentUser?.role === "coach" ? "Entrenador" : "Superadmin"}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+      {error && (
+        <div className="bg-destructive/10 text-destructive p-4 rounded-md flex items-center gap-2">
+          <AlertCircle className="h-5 w-5" />
+          <p>{error}</p>
+        </div>
+      )}
 
-        {/* Card de acciones */}
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-card-foreground flex items-center gap-2">
-              <Zap className="h-5 w-5 text-secondary" />
-              Acciones de Sincronización
-            </CardTitle>
-            <CardDescription className="text-muted-foreground">
-              Conecta con tu app móvil o exporta datos
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button
-              onClick={handleSync}
-              disabled={syncing}
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+      {loading && matches.length === 0 ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-48 rounded-xl bg-muted/20 animate-pulse" />
+          ))}
+        </div>
+      ) : matches.length === 0 && !error ? (
+        <div className="text-center py-12 border border-dashed rounded-lg">
+          <Trophy className="mx-auto h-12 w-12 text-muted-foreground/50 mb-3" />
+          <h3 className="text-lg font-medium text-foreground">No hay partidos registrados</h3>
+          <p className="text-muted-foreground">Los partidos creados en la app externa aparecerán aquí.</p>
+        </div>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {matches.map((match) => (
+            <Card
+              key={match.id}
+              className="group cursor-pointer hover:border-primary/50 transition-all duration-200 overflow-hidden"
+              onClick={() => router.push(`/dashboard/external-app/${match.id}`)}
             >
-              <Database className="mr-2 h-4 w-4" />
-              {syncing ? "Sincronizando..." : "Sincronizar con App Móvil"}
-            </Button>
-            <Button
-              onClick={handleExport}
-              variant="outline"
-              className="w-full border-secondary text-secondary hover:bg-secondary/10 bg-transparent"
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Exportar Datos
-            </Button>
-            <div className="mt-4 p-3 bg-secondary/10 border border-secondary/30 rounded-lg">
-              <p className="text-xs text-muted-foreground">
-                <strong className="text-secondary">Simulación:</strong> En producción, aquí se conectaría con una API
-                real que sincronizaría datos con apps móviles instaladas en tablets/smartphones para registro en vivo
-                durante los partidos.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              <CardHeader className="pb-3 bg-muted/40 border-b border-border/50">
+                <div className="flex justify-between items-start">
+                  <Badge variant={getStatusColor(match.status) as any} className="font-bold">
+                    {getStatusLabel(match.status)}
+                  </Badge>
+                  {match.total_time_seconds > 0 && (
+                    <div className="flex items-center text-xs font-mono text-muted-foreground bg-background px-2 py-1 rounded-sm border">
+                      <Clock className="h-3 w-3 mr-1" />
+                      {Math.floor(match.total_time_seconds / 60)}:
+                      {(match.total_time_seconds % 60).toString().padStart(2, "0")}
+                    </div>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="pt-5">
+                <div className="flex justify-between items-center mb-6">
+                  <div className="text-center w-1/3">
+                    <div className="font-bold text-lg leading-tight mb-1 truncate" title={match.team_a_name}>
+                      {match.team_a_name}
+                    </div>
+                    <div className="text-4xl font-black text-primary">{match.local_score}</div>
+                  </div>
+                  <div className="text-muted-foreground font-bold text-xs">VS</div>
+                  <div className="text-center w-1/3">
+                    <div className="font-bold text-lg leading-tight mb-1 truncate" title={match.team_b_name}>
+                      {match.team_b_name}
+                    </div>
+                    <div className="text-4xl font-black text-primary">{match.visitor_score}</div>
+                  </div>
+                </div>
 
-      {/* Info adicional */}
-      <Card className="bg-card/50 border-border">
-        <CardContent className="pt-6">
-          <h3 className="font-semibold text-card-foreground mb-3">Funcionalidad de App Externa</h3>
-          <div className="grid md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-            <div>
-              <h4 className="font-medium text-card-foreground mb-2">Características Principales:</h4>
-              <ul className="space-y-1 list-disc pl-5">
-                <li>Sincronización bidireccional de datos en tiempo real</li>
-                <li>Registro de estadísticas durante el partido desde tablet</li>
-                <li>Modo offline con sincronización posterior</li>
-                <li>Interfaz táctil optimizada para uso en campo</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-medium text-card-foreground mb-2">Casos de Uso:</h4>
-              <ul className="space-y-1 list-disc pl-5">
-                <li>Entrenador registra estadísticas en vivo desde banquillo</li>
-                <li>Analista captura métricas avanzadas durante el juego</li>
-                <li>Sincronización automática al finalizar el partido</li>
-                <li>Exportación de datos para análisis externo</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+                <div className="flex items-center text-xs text-muted-foreground pt-4 border-t border-border/50">
+                  <Calendar className="h-3.5 w-3.5 mr-1.5" />
+                  {format(new Date(match.created_at), "PPP p", { locale: es })}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

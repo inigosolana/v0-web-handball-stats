@@ -29,6 +29,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Mis Equipos", href: "/dashboard", icon: LayoutDashboard, roles: ["superadmin", "club_admin", "coach", "player"] },
     { name: "Sala de Análisis", href: "/dashboard/analysis", icon: Activity, roles: ["superadmin", "club_admin", "coach"] },
     { name: "Video Studio (AI)", href: "/dashboard/video-studio", icon: PlayCircle, roles: ["superadmin", "club_admin", "coach"] },
+    { name: "App Externa", href: "/dashboard/external-app", icon: Smartphone, roles: ["superadmin", "club_admin", "coach"] },
     { name: "Plantilla Técnica", href: "/dashboard/admin/staff", icon: Users, roles: ["superadmin", "club_admin"] },
     { name: "Gestión de Clubes", href: "/dashboard/clubs", icon: Shield, roles: ["superadmin"] },
     { name: "Gestión de Accesos", href: "/dashboard/access", icon: Shield, roles: ["superadmin"] },
