@@ -69,9 +69,9 @@ export default function MatchDetailsPage() {
 
     return (
         <div className="space-y-6">
-            <Button variant="ghost" onClick={() => router.back()} className="hover:bg-transparent pl-0 text-muted-foreground hover:text-foreground">
+            <Button variant="ghost" onClick={() => router.push("/dashboard/live-data")} className="hover:bg-transparent pl-0 text-muted-foreground hover:text-foreground">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Volver a Partidos
+                Volver a Datos en Directo
             </Button>
 
             {/* Header / Scoreboard */}

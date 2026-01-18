@@ -66,8 +66,8 @@ export default function ExternalAppPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Partidos Externos</h1>
-          <p className="text-muted-foreground">Sincronización con botoneras y API externa</p>
+          <h1 className="text-3xl font-bold text-foreground">Datos en Directo (Botonera)</h1>
+          <p className="text-muted-foreground">Monitorización en tiempo real de partidos conectados</p>
         </div>
         <Button variant="outline" onClick={fetchMatches} disabled={loading}>
           <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -91,8 +91,8 @@ export default function ExternalAppPage() {
       ) : matches.length === 0 && !error ? (
         <div className="text-center py-12 border border-dashed rounded-lg">
           <Trophy className="mx-auto h-12 w-12 text-muted-foreground/50 mb-3" />
-          <h3 className="text-lg font-medium text-foreground">No hay partidos registrados</h3>
-          <p className="text-muted-foreground">Los partidos creados en la app externa aparecerán aquí.</p>
+          <h3 className="text-lg font-medium text-foreground">No hay partidos activos</h3>
+          <p className="text-muted-foreground">Los partidos creados en la app de botonera aparecerán aquí.</p>
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -100,7 +100,7 @@ export default function ExternalAppPage() {
             <Card
               key={match.id}
               className="group cursor-pointer hover:border-primary/50 transition-all duration-200 overflow-hidden"
-              onClick={() => router.push(`/dashboard/external-app/${match.id}`)}
+              onClick={() => router.push(`/dashboard/live-data/${match.id}`)}
             >
               <CardHeader className="pb-3 bg-muted/40 border-b border-border/50">
                 <div className="flex justify-between items-start">
